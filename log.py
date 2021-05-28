@@ -76,7 +76,7 @@ def stars(num):
 
 # this updates time of last entry to the nearest second.
 def update():
-    f = open(r'C:\Users\theok\AppData\Local\Programs\Python\Python39\pie\logtime.txt', 'w')
+    f = open(['TXT FILE FOR DATETIME OF LAST ENTRY]', 'w')
     dong = str(datetime.now())[:19]
 
     f.write(dong)
