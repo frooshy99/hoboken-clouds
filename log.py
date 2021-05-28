@@ -27,11 +27,10 @@ def exi(inp):
         sys.exit()
 
 
+# feel free to add any shortcuts
 shortcuts = {'b': 'breakfast',
              'l': 'lunch',
-             'd': 'dinner',
-             'g': 'groceries',
-             'a': 'alcohol'}
+             'd': 'dinner'}
 
 
 monthDic = {1: 'January',
@@ -84,7 +83,7 @@ def update():
     f.close()
 
 
-wbDir = r'C:\Users\theok\AppData\Local\Programs\Python\Python39\pie\logbook.xlsx'
+wbDir = '[XLSX FILE LOCATION]'
 wb = openpyxl.load_workbook(wbDir)
 ws = wb.active
 
@@ -116,12 +115,13 @@ def get_row(index):
     catCat = ws[f'D{index}'].value
 
 
-ff = open(r'C:\Users\theok\AppData\Local\Programs\Python\Python39\pie\logtime.txt')
+ff = open('[TXT FILE FOR DATETIME OF LAST ENTRY]')
 p('Last entry: ')
 p(ff.read())
 
-catDic = {1: 'Scotiabank debit',
-          2: 'HSBC credit'}
+# feel free to change this to whatever
+catDic = {1: 'debit card',
+          2: 'credit card'}
 
 p('\nEnter \'exit\' at any prompt to stop program.\n\n')
 
@@ -144,12 +144,12 @@ while True:
         name = input()
         exi(name)
 
-        # a shortcut to input breakfast/lunch/dinner,
+        # for shortcuts
         if str(name) in shortcuts:
             name = shortcuts[name]
 
-        p('1 - Scotiabank debit\n'
-          '2 - HSBC credit\n'
+        p('1 - debit card\n'
+          '2 - credit card\n'
           'Which category would you like to add this to? ')
         cat = input()
         exi(cat)
@@ -243,288 +243,6 @@ while True:
             pi(f'{name} | ${cost} | ')
             stars(catCat)
 
-        # now to introduce a filter/sort system
-        # let's list down what can be filtered/sorted, then.
-        # filter: month, category, cost range
-        # sort: cost, category
-        # also implement ascending/descending option for sorting,
-        # use +/- respectively for input.
+        # filter/sort functionality removed for now.
 
-        # input()
-        # sys.exit()
-
-        # on 2nd thought idk if i even need this
-        p('\nFilter/Sort: ')
-        fors = input()
-        exi(fors)
-
-        if fors.casefold() == 'filter':
-            p('1 - Month\n'
-              '2 - Payment method\n'
-              '3 - Cost range\n'
-              'Choose. ')
-            filterChoice = input()
-            exi(filterChoice)
-
-            # FILTER BY YEAR
-            if int(filterChoice) == 1:
-                # p(yearsList)
-
-                while True:
-                    p('Year: ')
-                    yearF = input()
-                    exi(yearF)
-
-                    if int(yearF) in yearsList:
-                        while True:
-                            p('Month (number): ')
-                            monIndex = input()
-                            exi(monIndex)
-
-                            # remember to do else: error message + continue
-                            if 1 <= int(monIndex) <= 12:
-                                monName = month_match(monIndex)
-
-                                p(f'Spending for {monName} {yearF}:\n')
-
-                                # adds 0 to a single digit month, for date search on spreadsheet
-                                if len(str(monIndex)) == 1:
-                                    monIndex = f'0{monIndex}'
-
-                                prevDay = 0
-
-                                for i in range(1, numFilled):
-                                    dateVal = str(ws[f'A{i}'].value)
-
-                                    if f'{yearF}-{monIndex}' in dateVal:
-                                        day = dateVal[8:]
-                                        day = int(day[:2])
-
-                                        name = ws[f'B{i}'].value
-                                        cost = ws[f'C{i}'].value
-                                        catCat = ws[f'D{i}'].value
-
-                                        if day != prevDay:
-                                            pi(f'{day}: {name} | {cost} | {catCat}\n')
-
-                                            prevDay = day
-                                        else:
-                                            space2(day)
-                                            pi(f'{name} | {cost} | {catCat}\n')
-
-                                break
-                            else:
-                                p('Invalid input. Please try again.\n')
-
-                                continue
-                    else:
-                        p('Year not found in log. Please try again.\n')
-
-                        continue
-
-            # FILTER BY PAYMENT METHOD
-            elif int(filterChoice) == 2:
-                while True:
-                    p('1 - Scotiabank debit\n'
-                      '2 - HSBC credit\n'
-                      'Payment method: ')
-                    cat = input()
-                    exi(cat)
-
-                    if 1 <= int(cat) <= 2:
-                        pi(f'{catDic[int(cat)]}:\n')
-
-                        numPrinted = 0
-
-                        for i in range(1, numFilled):
-                            get_row(i)
-
-                            if int(catCat) == int(cat):
-                                numPrinted += 1
-
-                                if numPrinted < 2:
-                                    pi(f'{year}\n'
-                                       f'{month} - {day}: '
-                                       f'{name} | ${cost} | ')
-
-                                    prevYear = year
-                                    prevMonth = month
-                                    prevDay = day
-                                else:
-                                    if int(year) != int(prevYear):
-                                        pi(f'\n{year}:\n')
-
-                                        prevYear = year
-
-                                    if str(month) != str(prevMonth):
-                                        pi(f'{month}')
-
-                                        prevMonth = month
-                                    else:
-                                        space(month)
-
-                                    if day != prevDay:
-                                        pi(f' - {day}: ')
-
-                                        prevDay = day
-                                    else:
-                                        pi('      ')
-
-                                    pi(f'{name} | ${cost}\n')
-                    else:
-                        p('Invalid input. Dumbass.\n'
-                          'Please try again.\n')
-
-                        continue
-
-                    break
-            # FILTER BY COST RANGE
-            elif int(filterChoice) == 3:
-                p('Upper limit: ')
-                upLim = input()
-                exi(upLim)
-
-                p('Lower limit: ')
-                lowLim = input()
-                exi(lowLim)
-
-                if int(upLim) < int(lowLim):
-                    p('Why is the lower limit higher than the upper limit???\n'
-                      'You dummy.\n')
-
-                    tempLim = upLim
-                    upLim = lowLim
-                    lowLim = tempLim
-
-                numPrinted = 0
-
-                for i in range(1, numFilled):
-                    get_row(i)
-
-                    if lowLim <= int(cost) <= upLim:
-                        p(f'{year}:\n'
-                          f'{month} - {day}: ')
-
-                        numPrinted += 1
-
-                        if numPrinted < 2:
-                            pi(f'{year}\n'
-                               f'{month} - {day}: '
-                               f'{name} | ${cost} | ')
-
-                            prevYear = year
-                            prevMonth = month
-                            prevDay = day
-                        else:
-                            if int(year) != int(prevYear):
-                                pi(f'\n{year}:\n')
-
-                                prevYear = year
-
-                            if str(month) != str(prevMonth):
-                                pi(f'{month}')
-
-                                prevMonth = month
-                            else:
-                                space(month)
-
-                            if day != prevDay:
-                                pi(f' - {day}: ')
-
-                                prevDay = day
-                            else:
-                                pi('      ')
-
-                            pi(f'{name} | ${cost}\n')
-        elif fors.casefold() == 'sort':
-            p('1+ - Costs, ascending\n'
-              '1- - Costs, descending\n'
-              '2+ - Categories, ascending\n'
-              '2- - Categories, descending\n'
-              'Choose. ')
-            sortChoice = input()
-            exi(sortChoice)
-
-            sortChoice0 = int(str(sortChoice)[0])
-            sortChoice1 = str(sortChoice)[1]
-
-            # SORT BY COSTS
-            if sortChoice0 == 1:
-                costList = []
-
-                # to populate costList, which will then be sorted.
-                for i in range(1, numFilled):
-                    cost = int(ws[f'C{i}'].value)
-                    costList.append(cost)
-
-                # ASCENDING
-                if sortChoice1 == '+':
-                    costList.sort()
-                elif sortChoice1 == '-':
-                    costList.sort(reverse=True)
-
-                print(costList)
-
-                listPrinted = []
-                j = 0
-
-                while True:
-                    # use costList[i] to print row matching w cost
-                    # printed row's num added to listPrinted
-                    # so row doesn't get printed twice.
-
-                    for i in range(1, numFilled):
-                        # found an issue here
-                        # j still increments even after break statement on line 464
-                        # i have no idea.
-                        costMatch = int(costList[j])
-                        get_row(i)
-
-                        dateVal = dateVal[:10]
-
-                        if int(cost) == costMatch and i not in listPrinted:
-                            p(f'{dateVal} | {name} | {cost} | ')
-                            stars(catCat)
-
-                            listPrinted.append(i)
-                            j += 1
-
-                            break
-
-                        else:
-                            continue
-
-                    if len(listPrinted) == numFilled:
-                        break
-                    else:
-                        continue
-
-            elif sortChoice0 == 2:
-                catList = []
-
-                for i in range(1, numFilled):
-                    catCat = int(ws[f'D{i}'].value)
-                    catList.append(catCat)
-
-                if sortChoice1 == '+':
-                    catList.sort()
-                elif sortChoice0 == '-':
-                    catList.sort(reverse=True)
-
-                listPrinted = []
-
-                while True:
-                    for i in range(1, numFilled):
-                        catMatch = int(catList[i - 1])
-                        get_row(i)
-
-                        if int(catCat) == catMatch and i not in listPrinted:
-                            p(f'{dateVal} | {name} | {cost} | ')
-                            stars(catCat)
-
-                            listPrinted.append(i)
-
-                    if len(listPrinted) == numFilled:
-                        break
-                    else:
-                        continue
+        
