@@ -6,6 +6,11 @@ import sys
 from datetime import date
 from datetime import datetime
 import openpyxl
+import numpy as np
+import pandas as pd
+pd.options.mode.chained_assignment = None
+# ^ to disable SettingWithCopyWarning
+# is this a bad idea?
 
 
 def p(text, delay=0.005, end=''):
@@ -15,9 +20,7 @@ def p(text, delay=0.005, end=''):
         sleep(delay)
 
 
-def pi(text):
-    print(text, end='')
-    sleep(0.05)
+def pi(text): print(text, end='')
 
 
 def exi(inp):
@@ -27,30 +30,15 @@ def exi(inp):
         sys.exit()
 
 
-# feel free to add any shortcuts
+# add any shortcuts you want
 shortcuts = {'b': 'breakfast',
              'l': 'lunch',
-             'd': 'dinner'}
+             'd': 'dinner',
+             'g': 'groceries'}
 
 
-monthDic = {1: 'January',
-            2: 'February',
-            3: 'March',
-            4: 'April',
-            5: 'May',
-            6: 'June',
-            7: 'July',
-            8: 'August',
-            9: 'September',
-            10: 'October',
-            11: 'November',
-            12: 'December'}
-
-
-def month_match(mon):
-    monthmonth = monthDic[int(mon)]
-
-    return monthmonth
+monthDic = {1: 'January', 2: 'February', 3: 'March', 4: 'April', 5: 'May', 6: 'June',
+            7: 'July', 8: 'August', 9: 'September', 10: 'October', 11: 'November', 12: 'December'}
 
 
 def space(string):
@@ -60,64 +48,26 @@ def space(string):
         p(' ')
 
 
-def space2(datedate):
-    length = len(str(datedate)) + 2
-
-    for foo in range(length):
-        p(' ')
-
-
-def stars(num):
-    for foo in range(int(num)):
-        p('*')
-
-    print()
+def stars(num): return '*' * num
 
 
 # this updates time of last entry to the nearest second.
 def update():
-    f = open(['TXT FILE FOR DATETIME OF LAST ENTRY]', 'w')
-    dong = str(datetime.now())[:19]
+    f = open(['logtime.txt', 'w')
+    entrytime = str(datetime.now())[:19]
 
-    f.write(dong)
+    f.write(entrytime)
     f.close()
 
 
-wbDir = '[XLSX FILE LOCATION]'
+wbDir = 'logbook.xlsx'
 wb = openpyxl.load_workbook(wbDir)
 ws = wb.active
 
-# just to get rid of undefined var warnings. ticks me off.
-dateVal = ''
-year = 0
-month = 0
-day = 0
-name = ''
-cost = 0
-catCat = 0
-
-
-def get_row(index):
-    global dateVal, year, month, day, name, cost, catCat
-    dateVal = str(ws[f'A{int(index)}'].value)
-
-    year = dateVal[:4]
-
-    month = dateVal[5:]
-    month = month[:2]
-    month = month_match(month)
-
-    day = dateVal[8:]
-    day = int(day[:2])
-
-    name = ws[f'B{index}'].value
-    cost = ws[f'C{index}'].value
-    catCat = ws[f'D{index}'].value
-
-
-ff = open('[TXT FILE FOR DATETIME OF LAST ENTRY]')
+# reads last entry time
+ent = open('logtime.txt')
 p('Last entry: ')
-p(ff.read())
+p(ent.read())
 
 # feel free to change this to whatever
 catDic = {1: 'debit card',
@@ -156,7 +106,6 @@ while True:
 
         d = date.today()
 
-        # should i change this to a while loop? increment x inside.
         for x in range(1, 10000):
             if ws.cell(row=x, column=1).value is None:
                 ws[f'A{x}'] = d
@@ -181,9 +130,6 @@ while True:
 
     elif int(choice) == 2:
 
-        # only to initialize numFilled.
-        numFilled = 0
-
         # checks number of filled rows.
         for x in range(1, 10000):
             if ws.cell(row=x, column=1).value is None:
@@ -193,56 +139,171 @@ while True:
             else:
                 continue
 
-        yearsList = []
+        # to create an empty dataframe
+        index = np.arange(numFilled)
+        columns = ['YYYY', 'MM', 'DD', 'EXPENSE', 'SPENT', 'CATEGORY']
+        data = np.array([np.arange(numFilled)] * 6).T
 
-        # for first row.
-        get_row(1)
+        df = pd.DataFrame(index=index, columns=columns, data=data)
 
-        pi(f'\n{year}:\n'
-           f'{month}'
-           f' - {day}: ')
+        dateL = []
+        nameL = []
+        spentL = []
+        catL = []
 
-        prevYear = year
-        prevMonth = month
-        prevDay = day
+        for i in range(1, numFilled):
+            dateL.append(str(ws[f'A{i}'].value)[:10])
+            nameL.append(str(ws[f'B{i}'].value))
+            spentL.append(str(ws[f'C{i}'].value))
+            catL.append(str(ws[f'D{i}'].value))
 
-        yearsList.append(int(year))
+        def conv(to_conv): return pd.Series(to_conv)
 
-        pi(f'{name} | ${cost} | ')
-        stars(catCat)
+        dateL = conv(dateL)
+        nameL = conv(nameL)
+        spentL = conv(spentL)
+        catL = conv(catL)
 
-        # now to print out the rest of the log
-        # sorted by year then month.
+        dateDF = dateL.str.split('-', expand=True)
 
-        for i in range(2, numFilled):
-            get_row(i)
+        # populating the df
+        df['YYYY'] = dateDF[0]
+        df['MM'] = dateDF[1]
+        df['DD'] = dateDF[2]
+        df['EXPENSE'] = nameL
+        df['SPENT'] = '$' + spentL
+        df['CATEGORY'] = catL
 
-            if int(year) != int(prevYear):
-                pi(f'\n{year}:\n')
+        years = df['YYYY'].unique().tolist()[:-1]
+        # sliced off last list obj bc it's a nan, should look into why it's there
 
-                prevYear = year
-                yearsList.append(int(year))
+        # we're gonna make a shitload of nests aren't we?
+        for i in range(len(years)):
+            pi(f'{years[i]}:\n')
 
-            if str(month) != str(prevMonth):
-                pi(f'{month}')
+            this_year = df[df['YYYY'] == years[i]]
+            months = this_year['MM'].unique().tolist()
+            # print(months)
 
-                prevMonth = month
-            else:
-                space(month)
+            for j in range(len(months)):
+                month_str = monthDic[int(months[j])]
 
-            if day != prevDay:
-                pi(f' - {day}: ')
+                pi(f'{month_str}')
 
-                prevDay = day
-            else:
-                if day < 10:
-                    pi('      ')
-                else:
-                    pi('       ')
+                this_month = this_year[this_year['MM'] == months[j]]
+                days = this_month['DD'].unique().tolist()
 
-            pi(f'{name} | ${cost} | ')
-            stars(catCat)
+                for k in range(len(days)):
+                    if k > 0:
+                        space(month_str)
 
-        # filter/sort functionality removed for now.
+                    pi(f' - {days[k]}: ')
 
-        
+                    today = this_month[this_month['DD'] == days[k]]
+                    today = today[['EXPENSE','SPENT','CATEGORY']]
+
+                    for l in range(len(today)):
+                        info = today.iloc[l]
+                        expense = info['EXPENSE']
+                        spent = info['SPENT']
+                        category = int(info['CATEGORY'])
+
+                        if l > 0:
+                            space(f'{month_str}       ')
+
+                        pi(f'{expense} | {spent} | {stars(category)}\n')
+
+        # PRINTING DONE
+
+        date_today = str(date.today())
+        YYYY_now = date_today[:4]
+        MM_now = date_today[5:7]
+
+        ye = df['YYYY'] == YYYY_now
+        mo = df['MM'] == MM_now
+        df_month = df[ye & mo]
+
+        # if still no data for this month
+        if len(df_month) < 1:
+            MM_now = str(int(MM_now) - 1)
+
+        # i wish there's a better way to do this
+        if len(MM_now) < 2:
+            MM_now = f'0{MM_now}'
+            # bc need to match with df['MM'], e.g. 6 -> '06'
+
+            mo = df['MM'] == MM_now
+            df_month = df[ye & mo]
+
+        def to_float(text): return float(text[1:])
+
+        # maybe should apply to whole df
+        df_month['SPENT_fl'] = df_month['SPENT'].apply(to_float)
+
+        spent_month = df_month['SPENT_fl'].sum()
+
+        # maybe put this in excel, fetch val using openpyxl
+        # also allow changes to val
+        # make sure set budget to whole number
+        budget = 600
+        budget_frac = int(spent_month / budget * 50)
+
+        bar = '█'
+        spac = ' '
+        under = f'Spent: ${spent_month}'
+
+        p(f'\n{monthDic[int(MM_now)]} {YYYY_now}:\n')
+
+        # "progress" bar
+        p(f'|{bar * budget_frac}{spac * (50 - budget_frac)}|\n')
+        pi(under + ' ' * (37 - len(under)) + f'Budget: ${budget}.00\n')
+
+        meals = list(shortcuts.values())[:3]
+        others = list(shortcuts.values())[3:]
+        # things not in meals & not in others = misc
+
+        # categorical breakdown of expenses, only the meal expenses are grouped together
+
+        breakdown = {}
+
+        df_month_meals = df_month[df_month['EXPENSE'].isin(meals)]
+        breakdown.update({'meals': float('%.2f'%df_month_meals['SPENT_fl'].sum())})
+
+        for i in range(len(others)):
+            spentspent = df_month[df_month['EXPENSE'] == others[i]]
+            breakdown.update({f'{others[i]}': float('%.2f'%spentspent['SPENT_fl'].sum())})
+
+        misc = df_month[~df_month['EXPENSE'].isin(meals) & ~df_month['EXPENSE'].isin(others)]
+        breakdown.update({'miscellaneous': float('%.2f'%misc['SPENT_fl'].sum())})
+        # set 2 decimal places bc one of the dict values was like 197.17000000002 and idk why
+        # i know this is a lot of patching holes but it's defo one way to do it
+
+        breakdown = sorted(breakdown.items(), key=lambda x: x[1], reverse=True)
+        # descending sort
+
+        prev_pipe = 0
+
+        for i in range(len(breakdown)):
+            amount = breakdown[i][1]
+            pipe = int(amount / budget * 50)
+
+            if i == len(breakdown) - 1 and prev_pipe + pipe < budget_frac:
+                pipe = budget_frac - prev_pipe
+            # gotta do this to make sure things align
+            # not most accurate presentation but yeah
+
+            p(' ' + ' ' * prev_pipe + '|' * pipe + f' {breakdown[i][0]}, ${amount}\n')
+            prev_pipe = pipe + prev_pipe
+
+        p('\n5 most costly this month:\n')
+        top5 = df_month.nlargest(n=5, columns='SPENT_fl')
+        # p(top5.info())
+
+        for i in range(len(top5)):
+            row = top5.iloc[i]
+            exp = row['EXPENSE']
+            amt = row['SPENT_fl']
+
+            p(f'{i + 1}. {exp}, ${amt}\n')
+
+        sys.exit()
