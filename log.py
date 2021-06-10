@@ -183,7 +183,6 @@ while True:
 
             this_year = df[df['YYYY'] == years[i]]
             months = this_year['MM'].unique().tolist()
-            # print(months)
 
             for j in range(len(months)):
                 month_str = monthDic[int(months[j])]
@@ -247,7 +246,14 @@ while True:
         # make sure set budget to whole number
         budget = 600
         budget_frac = int(spent_month / budget * 50)
-
+        
+        over_warning = ''
+        if budget_frac > 50:
+            budget_frac = 50
+            over_warning = ' Overbudget!'
+        # makes sure it's capped at 50
+        # also over_warning str: nothing printed if <= 0.
+              
         bar = '█'
         spac = ' '
         under = f'Spent: ${spent_month}'
@@ -255,7 +261,7 @@ while True:
         p(f'\n{monthDic[int(MM_now)]} {YYYY_now}:\n')
 
         # "progress" bar
-        p(f'|{bar * budget_frac}{spac * (50 - budget_frac)}|\n')
+        p(f'|{bar * budget_frac}{spac * (50 - budget_frac)}|{over_warning}\n')
         pi(under + ' ' * (37 - len(under)) + f'Budget: ${budget}.00\n')
 
         meals = list(shortcuts.values())[:3]
@@ -263,7 +269,6 @@ while True:
         # things not in meals & not in others = misc
 
         # categorical breakdown of expenses, only the meal expenses are grouped together
-
         breakdown = {}
 
         df_month_meals = df_month[df_month['EXPENSE'].isin(meals)]
@@ -291,13 +296,16 @@ while True:
                 pipe = budget_frac - prev_pipe
             # gotta do this to make sure things align
             # not most accurate presentation but yeah
+            
+            if amount != 0:
+                p(' ' + ' ' * prev_pipe + '|' * pipe + f' {breakdown[i][0]}, ${amount}\n')
+                prev_pipe = pipe + prev_pipe  
 
             p(' ' + ' ' * prev_pipe + '|' * pipe + f' {breakdown[i][0]}, ${amount}\n')
             prev_pipe = pipe + prev_pipe
 
         p('\n5 most costly this month:\n')
         top5 = df_month.nlargest(n=5, columns='SPENT_fl')
-        # p(top5.info())
 
         for i in range(len(top5)):
             row = top5.iloc[i]
