@@ -32,11 +32,11 @@ def exi(inp):
 
 def input_(argv_ind):
     if len(sys.argv) < 2:
-        input()
+        text = input()
     else:
         text = sys.argv[argv_ind]
         p(text)
-        return text
+    return text
 
 
 # add any shortcuts you want
@@ -94,7 +94,7 @@ while True:
     exi(choice)
 
     # this will be for adding to log
-    if int(choice) == 1 or choice == 'add':
+    if int(choice) == 1:
         p('\nHow much did you spend? ')
         val = input_(2)
         exi(val)
@@ -140,7 +140,7 @@ while True:
 
         # so that's one done.
 
-    elif int(choice) == 2 or choice == 'view':
+    elif int(choice) == 2:
 
         # checks number of filled rows.
         for x in range(1, 10000):
@@ -234,17 +234,9 @@ while True:
         mo = df['MM'] == MM_now
         df_month = df[ye & mo]
 
-        # if still no data for this month
+        # if still no data for current month
         if len(df_month) < 1:
             MM_now = str(int(MM_now) - 1)
-
-        # i wish there's a better way to do this
-        if len(MM_now) < 2:
-            MM_now = f'0{MM_now}'
-            # bc need to match with df['MM'], e.g. 6 -> '06'
-
-            mo = df['MM'] == MM_now
-            df_month = df[ye & mo]
 
         def to_float(text): return float(text[1:])
 
