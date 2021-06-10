@@ -9,7 +9,7 @@ import openpyxl
 import numpy as np
 import pandas as pd
 pd.options.mode.chained_assignment = None
-# ^ to disable SettingWithCopyWarning
+# ^ to disable SettingWithCopyWarning caused by establishing df['SPENT_fl']
 # is this a bad idea?
 
 
@@ -28,6 +28,15 @@ def exi(inp):
         p('Goodbye.\n')
 
         sys.exit()
+
+
+def input_(argv_ind):
+    if len(sys.argv) < 2:
+        input()
+    else:
+        text = sys.argv[argv_ind]
+        p(text)
+        return text
 
 
 # add any shortcuts you want
@@ -80,18 +89,18 @@ p('1 - Add to log\n'
 
 while True:
     p('What would you like to do? ')
-    choice = input()
+    choice = input_(1)
 
     exi(choice)
 
     # this will be for adding to log
-    if int(choice) == 1:
+    if int(choice) == 1 or choice == 'add':
         p('\nHow much did you spend? ')
-        val = input()
+        val = input_(2)
         exi(val)
 
         p('What did you spend it on? ')
-        name = input()
+        name = input_(3)
         exi(name)
 
         # for shortcuts
@@ -101,7 +110,7 @@ while True:
         p('1 - debit card\n'
           '2 - credit card\n'
           'Which category would you like to add this to? ')
-        cat = input()
+        cat = input_(4)
         exi(cat)
 
         d = date.today()
@@ -123,12 +132,15 @@ while True:
 
         sleep(3)
         p('\n')
+              
+        if len(sys.argv) > 1:
+              sys.exit()
 
         continue
 
         # so that's one done.
 
-    elif int(choice) == 2:
+    elif int(choice) == 2 or choice == 'view':
 
         # checks number of filled rows.
         for x in range(1, 10000):
