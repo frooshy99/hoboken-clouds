@@ -191,7 +191,7 @@ while True:
 
         # we're gonna make a shitload of nests aren't we?
         for i in range(len(years)):
-            pi(f'{years[i]}:\n')
+            pi(f'\n{years[i]}:\n')
 
             this_year = df[df['YYYY'] == years[i]]
             months = this_year['MM'].unique().tolist()
@@ -247,7 +247,7 @@ while True:
 
         # maybe put this in excel, fetch val using openpyxl
         # also allow changes to val
-        # make sure set budget to whole number
+        # make sure set to whole number
         budget = 600
         budget_frac = int(spent_month / budget * 50)
         
@@ -256,7 +256,6 @@ while True:
             budget_frac = 50
             over_warning = ' Overbudget!'
         # makes sure it's capped at 50
-        # also over_warning str: nothing printed if <= 0.
               
         bar = '█'
         spac = ' '
@@ -274,20 +273,24 @@ while True:
 
         # categorical breakdown of expenses, only the meal expenses are grouped together
         breakdown = {}
+              
+        
+        def br_update(text, df_df):
+            if df_df['SPENT_fl'].sum() > 0:  # problems to alignment (line 303) etc. if 0 value item gets into dic
+                breakdown.update({text: float('%.2f' % df_df['SPENT_fl'].sum())})
 
+        
         df_month_meals = df_month[df_month['EXPENSE'].isin(meals)]
-        breakdown.update({'meals': float('%.2f'%df_month_meals['SPENT_fl'].sum())})
+        br_update('meals', df_month_meals)
 
         for i in range(len(others)):
             spentspent = df_month[df_month['EXPENSE'] == others[i]]
-            breakdown.update({f'{others[i]}': float('%.2f'%spentspent['SPENT_fl'].sum())})
+            br_update(others[i], spentspent)
 
         misc = df_month[~df_month['EXPENSE'].isin(meals) & ~df_month['EXPENSE'].isin(others)]
-        breakdown.update({'miscellaneous': float('%.2f'%misc['SPENT_fl'].sum())})
-        # set 2 decimal places bc one of the dict values was like 197.17000000002 and idk why
-        # i know this is a lot of patching holes but it's defo one way to do it
+        br_update('miscellaneous', misc)
 
-        breakdown = sorted(breakdown.items(), key=lambda x: x[1], reverse=True)
+        breakdown = sorted(breakdown.items(), key=lambda a: a[1], reverse=True)
         # descending sort
 
         prev_pipe = 0
@@ -301,11 +304,7 @@ while True:
             # gotta do this to make sure things align
             # not most accurate presentation but yeah
             
-            if amount != 0:
-                p(' ' + ' ' * prev_pipe + '|' * pipe + f' {breakdown[i][0]}, ${amount}\n')
-                prev_pipe = pipe + prev_pipe  
-
-            p(' ' + ' ' * prev_pipe + '|' * pipe + f' {breakdown[i][0]}, ${amount}\n')
+            p(' ' * (prev_pipe + 1) + '|' * pipe + f' {breakdown[i][0]}, ${amount}\n')
             prev_pipe = pipe + prev_pipe
 
         p('\n5 most costly this month:\n')
