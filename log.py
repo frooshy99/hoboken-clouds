@@ -33,10 +33,15 @@ def exi(inp):
 def input_(argv_ind):
     if len(sys.argv) < 2:
         text = input()
+
+        exi(text)
+        return text
     else:
         text = sys.argv[argv_ind]
-        p(text)
-    return text
+        text = str(text).replace('_', ' ')  # use underscores in place of spaces for command line input
+
+        p(text + '\n')
+        return text
 
 
 # add any shortcuts you want
@@ -91,17 +96,13 @@ while True:
     p('What would you like to do? ')
     choice = input_(1)
 
-    exi(choice)
-
     # this will be for adding to log
     if int(choice) == 1:
         p('\nHow much did you spend? ')
         val = input_(2)
-        exi(val)
 
         p('What did you spend it on? ')
         name = input_(3)
-        exi(name)
 
         # for shortcuts
         if str(name) in shortcuts:
@@ -111,7 +112,6 @@ while True:
           '2 - credit card\n'
           'Which category would you like to add this to? ')
         cat = input_(4)
-        exi(cat)
 
         d = date.today()
 
