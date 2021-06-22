@@ -67,7 +67,7 @@ def stars(num): return '*' * num
 
 # this updates time of last entry to the nearest second.
 def update():
-    f = open(['logtime.txt', 'w')
+    f = open('logtime.txt', 'w')
     entrytime = str(datetime.now())[:19]
 
     f.write(entrytime)
