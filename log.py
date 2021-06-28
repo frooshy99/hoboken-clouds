@@ -89,11 +89,55 @@ catDic = {1: 'debit card',
 
 p('\nEnter \'exit\' at any prompt to stop program.\n\n')
 
-p('1 - Add to log\n'
-  '2 - View log\n')
-
 while True:
-    p('What would you like to do? ')
+    # checks number of filled rows.
+    for x in range(1, 10000):
+        if ws.cell(row=x, column=1).value is None:
+            numFilled = int(x)
+
+            break
+        else:
+            continue
+
+    # to create an empty dataframe
+    index = np.arange(numFilled)
+    columns = ['YYYY', 'MM', 'DD', 'EXPENSE', 'SPENT', 'CATEGORY']
+    data = np.array([np.arange(numFilled)] * 6).T
+
+    df = pd.DataFrame(index=index, columns=columns, data=data)
+
+    dateL = []
+    nameL = []
+    spentL = []
+    catL = []
+
+    for i in range(1, numFilled):
+        dateL.append(str(ws[f'A{i}'].value)[:10])
+        nameL.append(str(ws[f'B{i}'].value))
+        spentL.append(str(ws[f'C{i}'].value))
+        catL.append(str(ws[f'D{i}'].value))
+
+    def conv(to_conv): return pd.Series(to_conv)
+
+    dateL = conv(dateL)
+    nameL = conv(nameL)
+    spentL = conv(spentL)
+    catL = conv(catL)
+
+    dateDF = dateL.str.split('-', expand=True)
+
+    # populating the df
+    df['YYYY'] = dateDF[0]
+    df['MM'] = dateDF[1]
+    df['DD'] = dateDF[2]
+    df['EXPENSE'] = nameL
+    df['SPENT'] = '$' + spentL
+    df['CATEGORY'] = catL
+
+    p('1 - Add to log\n'
+      '2 - View log\n'
+      '3 - View summary for month\n\n'
+      'What would you like to do? ')
     choice = input_(1)
 
     # this will be for adding to log
@@ -141,51 +185,6 @@ while True:
         # so that's one done.
 
     elif int(choice) == 2:
-
-        # checks number of filled rows.
-        for x in range(1, 10000):
-            if ws.cell(row=x, column=1).value is None:
-                numFilled = int(x)
-
-                break
-            else:
-                continue
-
-        # to create an empty dataframe
-        index = np.arange(numFilled)
-        columns = ['YYYY', 'MM', 'DD', 'EXPENSE', 'SPENT', 'CATEGORY']
-        data = np.array([np.arange(numFilled)] * 6).T
-
-        df = pd.DataFrame(index=index, columns=columns, data=data)
-
-        dateL = []
-        nameL = []
-        spentL = []
-        catL = []
-
-        for i in range(1, numFilled):
-            dateL.append(str(ws[f'A{i}'].value)[:10])
-            nameL.append(str(ws[f'B{i}'].value))
-            spentL.append(str(ws[f'C{i}'].value))
-            catL.append(str(ws[f'D{i}'].value))
-
-        def conv(to_conv): return pd.Series(to_conv)
-
-        dateL = conv(dateL)
-        nameL = conv(nameL)
-        spentL = conv(spentL)
-        catL = conv(catL)
-
-        dateDF = dateL.str.split('-', expand=True)
-
-        # populating the df
-        df['YYYY'] = dateDF[0]
-        df['MM'] = dateDF[1]
-        df['DD'] = dateDF[2]
-        df['EXPENSE'] = nameL
-        df['SPENT'] = '$' + spentL
-        df['CATEGORY'] = catL
-
         years = df['YYYY'].unique().tolist()[:-1]
         # sliced off last list obj bc it's a nan, should look into why it's there
 
@@ -224,26 +223,45 @@ while True:
 
                         pi(f'{expense} | {spent} | {stars(category)}\n')
 
-        # PRINTING DONE
-
+    elif int(choice) == 3:
         date_today = str(date.today())
         YYYY_now = date_today[:4]
         MM_now = date_today[5:7]
 
-        ye = df['YYYY'] == YYYY_now
-        mo = df['MM'] == MM_now
-        df_month = df[ye & mo]
+        df_month = df[(df['YYYY'] == YYYY_now) & (df['MM'] == MM_now)]
 
         # if still no data for current month
         if len(df_month) < 1:
             MM_now = str(int(MM_now) - 1)
+            df_month = df[(df['YYYY'] == YYYY_now) & (df['MM'] == MM_now)]
+        
+        days = df_month['DD'].unique().tolist()
+
+        p(f'\n{monthDic[int(MM_now)]} {YYYY_now}:\n')
+
+        for i in range(len(days)):
+            pi(f'{days[i]}: ')
+
+            today = df_month[df_month['DD'] == days[i]]
+            today = today[['EXPENSE', 'SPENT', 'CATEGORY']]
+
+            for j in range(len(today)):
+                info = today.iloc[j]
+                expense = info['EXPENSE']
+                spent = info['SPENT']
+                category = int(info['CATEGORY'])
+
+                if j > 0:
+                    space(f'{days[i]}: ')
+
+                pi(f'{expense} | {spent} | {stars(category)}\n')
 
         def to_float(text): return float(text[1:])
 
         # maybe should apply to whole df
         df_month['SPENT_fl'] = df_month['SPENT'].apply(to_float)
 
-        spent_month = df_month['SPENT_fl'].sum()
+        spent_month = float('%.2f' % df_month['SPENT_fl'].sum())
 
         # maybe put this in excel, fetch val using openpyxl
         # also allow changes to val
@@ -255,13 +273,12 @@ while True:
         if budget_frac > 50:
             budget_frac = 50
             over_warning = ' Overbudget!'
-        # makes sure it's capped at 50
               
         bar = '█'
         spac = ' '
         under = f'Spent: ${spent_month}'
 
-        p(f'\n{monthDic[int(MM_now)]} {YYYY_now}:\n')
+        p('\n')
 
         # "progress" bar
         p(f'|{bar * budget_frac}{spac * (50 - budget_frac)}|{over_warning}\n')
@@ -273,12 +290,10 @@ while True:
 
         # categorical breakdown of expenses, only the meal expenses are grouped together
         breakdown = {}
-              
-        
+                     
         def br_update(text, df_df):
             if df_df['SPENT_fl'].sum() > 0:  # problems to alignment (line 303) etc. if 0 value item gets into dic
                 breakdown.update({text: float('%.2f' % df_df['SPENT_fl'].sum())})
-
         
         df_month_meals = df_month[df_month['EXPENSE'].isin(meals)]
         br_update('meals', df_month_meals)
