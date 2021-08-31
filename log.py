@@ -8,9 +8,6 @@ from datetime import datetime
 import openpyxl
 import numpy as np
 import pandas as pd
-pd.options.mode.chained_assignment = None
-# ^ to disable SettingWithCopyWarning caused by establishing df['SPENT_fl']
-# is this a bad idea?
 
 
 def p(text, delay=0.005, end=''):
@@ -26,12 +23,11 @@ def pi(text): print(text, end='')
 def exi(inp):
     if str(inp).casefold() == 'exit' or str(inp).casefold() == 'e':
         p('Goodbye.\n')
-
         sys.exit()
 
 
 def input_(argv_ind):
-    if len(sys.argv) < 2:
+    if len(sys.argv) < argv_ind + 1:
         text = input()
 
         exi(text)
@@ -55,11 +51,7 @@ monthDic = {1: 'January', 2: 'February', 3: 'March', 4: 'April', 5: 'May', 6: 'J
             7: 'July', 8: 'August', 9: 'September', 10: 'October', 11: 'November', 12: 'December'}
 
 
-def space(string):
-    length = len(str(string))
-
-    for foo in range(length):
-        p(' ')
+def space(string): return ' ' * len(string)
 
 
 def stars(num): return '*' * num
@@ -80,12 +72,10 @@ ws = wb.active
 
 # reads last entry time
 ent = open('logtime.txt')
-p('Last entry: ')
-p(ent.read())
+p(f'Last entry: {ent.read()}')
 
 # feel free to change this to whatever
-catDic = {1: 'debit card',
-          2: 'credit card'}
+cats = ['debit card', 'credit card']
 
 p('\nEnter \'exit\' at any prompt to stop program.\n\n')
 
@@ -131,12 +121,14 @@ while True:
     df['MM'] = dateDF[1]
     df['DD'] = dateDF[2]
     df['EXPENSE'] = nameL
-    df['SPENT'] = '$' + spentL
+    df['SPENT'] = spentL
     df['CATEGORY'] = catL
+    
+    def to_float(text): return float(text)
+    df['SPENT_fl'] = df['SPENT'].apply(to_float)
 
     p('1 - Add to log\n'
-      '2 - View log\n'
-      '3 - View summary for month\n\n'
+      '2 - View summary for month\n'
       'What would you like to do? ')
     choice = input_(1)
 
@@ -152,9 +144,10 @@ while True:
         if str(name) in shortcuts:
             name = shortcuts[name]
 
-        p('1 - debit card\n'
-          '2 - credit card\n'
-          'Which category would you like to add this to? ')
+        for i in range(len(cats)):
+            p(f'{i + 1} - {cats[i]}\n')
+            
+        p('Which category would you like to add this to? ')
         cat = input_(4)
 
         d = date.today()
@@ -165,7 +158,6 @@ while True:
                 ws[f'B{x}'] = name
                 ws[f'C{x}'] = val
                 ws[f'D{x}'] = cat
-
                 break
             else:
                 continue
@@ -174,56 +166,12 @@ while True:
         p('\nData added to log.\n')
         update()
 
-        sleep(3)
-        p('\n')
-              
         if len(sys.argv) > 1:
               sys.exit()
 
         continue
 
-        # so that's one done.
-
     elif int(choice) == 2:
-        years = df['YYYY'].unique().tolist()[:-1]
-        # sliced off last list obj bc it's a nan, should look into why it's there
-
-        # we're gonna make a shitload of nests aren't we?
-        for i in range(len(years)):
-            pi(f'\n{years[i]}:\n')
-
-            this_year = df[df['YYYY'] == years[i]]
-            months = this_year['MM'].unique().tolist()
-
-            for j in range(len(months)):
-                month_str = monthDic[int(months[j])]
-
-                pi(f'{month_str}')
-
-                this_month = this_year[this_year['MM'] == months[j]]
-                days = this_month['DD'].unique().tolist()
-
-                for k in range(len(days)):
-                    if k > 0:
-                        space(month_str)
-
-                    pi(f' - {days[k]}: ')
-
-                    today = this_month[this_month['DD'] == days[k]]
-                    today = today[['EXPENSE','SPENT','CATEGORY']]
-
-                    for l in range(len(today)):
-                        info = today.iloc[l]
-                        expense = info['EXPENSE']
-                        spent = info['SPENT']
-                        category = int(info['CATEGORY'])
-
-                        if l > 0:
-                            space(f'{month_str}       ')
-
-                        pi(f'{expense} | {spent} | {stars(category)}\n')
-
-    elif int(choice) == 3:
         date_today = str(date.today())
         YYYY_now = date_today[:4]
         MM_now = date_today[5:7]
@@ -252,20 +200,12 @@ while True:
                 category = int(info['CATEGORY'])
 
                 if j > 0:
-                    space(f'{days[i]}: ')
+                    p(space(f'{days[i]}: '))
 
-                pi(f'{expense} | {spent} | {stars(category)}\n')
+                pi(f'{expense} | ${spent} | {stars(category)}\n')
 
-        def to_float(text): return float(text[1:])
+        spent_month = df_month['SPENT_fl'].sum()
 
-        # maybe should apply to whole df
-        df_month['SPENT_fl'] = df_month['SPENT'].apply(to_float)
-
-        spent_month = float('%.2f' % df_month['SPENT_fl'].sum())
-
-        # maybe put this in excel, fetch val using openpyxl
-        # also allow changes to val
-        # make sure set to whole number
         budget = 600
         budget_frac = int(spent_month / budget * 50)
         
@@ -276,12 +216,10 @@ while True:
               
         bar = '█'
         spac = ' '
-        under = f'Spent: ${spent_month}'
-
-        p('\n')
-
+        under = f'Spent: ${round(spent_month, 2)}'
+        
         # "progress" bar
-        p(f'|{bar * budget_frac}{spac * (50 - budget_frac)}|{over_warning}\n')
+        p(f'\n|{bar * budget_frac}{spac * (50 - budget_frac)}|{over_warning}\n')
         pi(under + ' ' * (37 - len(under)) + f'Budget: ${budget}.00\n')
 
         meals = list(shortcuts.values())[:3]
@@ -321,6 +259,16 @@ while True:
             
             p(' ' * (prev_pipe + 1) + '|' * pipe + f' {breakdown[i][0]}, ${amount}\n')
             prev_pipe = pipe + prev_pipe
+            
+        for i in range(len(cats)):
+            if i < 1:
+                p(f'\nSpent on ')
+            else:
+                p(space('Spent on '))
+
+            df_cat = df_month[df_month['CATEGORY'] == f'{i + 1}']
+            p(f'{cats[i]}: ${round(df_cat["SPENT_fl"].sum(), 2)}\n')
+
 
         p('\n5 most costly this month:\n')
         top5 = df_month.nlargest(n=5, columns='SPENT_fl')
